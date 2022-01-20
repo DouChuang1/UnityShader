@@ -1,20 +1,25 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
-Shader "TA01/MiniShader"
+Shader "TA01/BlendShader"
 {
     Properties
     {
 	   _MainTex("texture",2D)="white"{}
-       _Float("float",Float)=0.0
+       _Emiss("float",Float)=0.0
 	   _Range("range",Range(0.0,1.0))=0.0
 	   _Vector("vector",Vector)=(0,0,0,0)
-	   _Color("color",Color)=(0.5,0.5,0.5,1)
+	   _MainColor("MainColor",Color)=(0.5,0.5,0.5,1)
 	   [Enum(UnityEngine.Rendering.CullMode)]_CullMode("CullMode",float)=2
     }
     SubShader
     {
+		Tags{"Queue"="Transparent"}
        pass
-	   {	Cull [_CullMode]
+	   {	
+			ZWrite Off
+			//Blend SrcAlpha OneMinusSrcAlpha
+			Blend SrcAlpha One
+			Cull [_CullMode]
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -31,9 +36,10 @@ Shader "TA01/MiniShader"
 				float2 uv : TEXCOORD0; //Í¨ÓÃµÄ¼Ä´æÆ÷
 			};
 
-			float4 _Color;
+			float4 _MainColor;
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
+			float _Emiss;
 			v2f vert(appdata v)
 			{
 				v2f o;
@@ -48,8 +54,10 @@ Shader "TA01/MiniShader"
 
 			float4 frag(v2f i): SV_Target
 			{
-				float4 col = tex2D(_MainTex,i.uv);
-				return col;
+				half3 col = _MainColor.xyz*_Emiss;
+				half alpha = saturate(tex2D(_MainTex,i.uv).r*_MainColor.a*_Emiss);
+				
+				return float4(col,alpha);
 			}
 			ENDCG
 	   }

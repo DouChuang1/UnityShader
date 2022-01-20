@@ -1,14 +1,14 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 
-Shader "TA01/MiniShader"
+Shader "TA01/ClipShader"
 {
     Properties
     {
 	   _MainTex("texture",2D)="white"{}
-       _Float("float",Float)=0.0
-	   _Range("range",Range(0.0,1.0))=0.0
-	   _Vector("vector",Vector)=(0,0,0,0)
-	   _Color("color",Color)=(0.5,0.5,0.5,1)
+	   _NoiseTex("texture",2D)="white"{}
+	   _Cutout("Cutout",Range(0.0,1.0))=0.0
+	   _Speed("speed",Vector)=(0,0,0,0)
+	   _MainColor("MainColor",Color)=(0.5,0.5,0.5,1)
 	   [Enum(UnityEngine.Rendering.CullMode)]_CullMode("CullMode",float)=2
     }
     SubShader
@@ -31,16 +31,17 @@ Shader "TA01/MiniShader"
 				float2 uv : TEXCOORD0; //Í¨ÓÃµÄ¼Ä´æÆ÷
 			};
 
-			float4 _Color;
+			float4 _MainColor;
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
+			float _Cutout;
+			float4 _Speed;
+
+			sampler2D _NoiseTex;
+			float4 _NoiseTex_ST;
 			v2f vert(appdata v)
 			{
 				v2f o;
-				//float4 worldPos = mul(unity_ObjectToWorld,v.vertex);
-				//float4 viewPos = mul(UNITY_MATRIX_V,worldPos);
-				//float4 clipPos = mul(UNITY_MATRIX_P,viewPos);
-				//o.pos = clipPos;
 				o.pos =UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv*_MainTex_ST.xy+_MainTex_ST.zw;
 				return o;
@@ -48,8 +49,10 @@ Shader "TA01/MiniShader"
 
 			float4 frag(v2f i): SV_Target
 			{
-				float4 col = tex2D(_MainTex,i.uv);
-				return col;
+				half gradient = tex2D(_MainTex,i.uv+_Time.y*_Speed.xy).r;
+				half noise = tex2D(_NoiseTex,i.uv+_Time.y*_Speed.zw).r;
+				clip(gradient-noise-_Cutout);
+				return _MainColor;
 			}
 			ENDCG
 	   }
